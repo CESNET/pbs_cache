@@ -1,0 +1,54 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:       pbs-cache
+# Required-Start: $network $local_fs $time
+# Required-Stop:  
+# Default-Start:  3 5
+# Default-Stop:   0 2 1 6
+# Description:    Start PBS cache
+### END INIT INFO
+set -e
+
+test -x /usr/sbin/pbs_cache || exit 0
+
+#edit /etc/default/pbs_cache to change this.
+CACHE_OPTS="-p /var/run/pbs_cache.pid -I 127.0.0.1"
+
+if [ -f /etc/default/pbs_cache ] ; then
+        . /etc/default/pbs_cache
+fi
+
+
+case "$1" in
+  start)
+        echo -n "Starting pbs_cache"
+	ulimit -c unlimited
+	while true; do 
+	  if ! kill -0 `cat /var/run/pbs_cache.pid` 2>/dev/null;then
+#		start-stop-daemon --start --quiet --pidfile /var/run/pbs_cache.pid --exec /usr/bin/valgrind -- --trace-children=yes --log-file=/var/log/cache_log /usr/sbin/pbs_cache $CACHE_OPTS
+#		start-stop-daemon --start --quiet --pidfile /var/run/pbs_cache.pid --exec /usr/bin/valgrind -- --trace-children=yes --log-file=/var/log/cache_helgrind --tool=helgrind /usr/sbin/pbs_cache $CACHE_OPTS
+		start-stop-daemon --start --quiet --pidfile /var/run/pbs_cache.pid --exec /usr/sbin/pbs_cache -- $CACHE_OPTS
+	  fi
+	  sleep 30
+	done &
+	echo $! >/var/run/pbs_cache_watcher.pid
+        echo "."
+	;;
+  stop)
+        echo -n "Stopping pbs_cache"
+	kill `cat /var/run/pbs_cache_watcher.pid`
+	start-stop-daemon --stop --quiet --oknodo --pidfile /var/run/pbs_cache.pid
+        echo "."
+	;;
+  restart)
+        echo -n "Restarting pbs_cache"
+	start-stop-daemon --stop --quiet --oknodo --pidfile /var/run/pbs_cache.pid
+	start-stop-daemon --start --quiet --pidfile /var/run/pbs_cache.pid --exec /usr/sbin/pbs_cache -- $CACHE_OPTS
+        echo "."
+	;;
+  *)
+	echo "Usage: /etc/init.d/pbs_cache {start|stop|restart}"
+	exit 1
+esac
+
+exit 0

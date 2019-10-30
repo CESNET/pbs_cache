@@ -1,0 +1,42 @@
+Source: pbs-cache
+Section: net
+Priority: optional
+Maintainer: Simon Toth <toth@fi.muni.cz>
+Uploaders: Simon Toth <toth@fi.muni.cz>
+Build-Depends: autotools-dev (>= 20100122.1~),
+               chrpath,
+               debhelper (>= 7),
+               libpam0g-dev,
+               libkvm-dev [kfreebsd-any],
+               openssh-client,
+               tcl8.5-dev,
+               tk8.5-dev,
+               heimdal-dev
+Standards-Version: 3.8.4
+DM-Upload-Allowed: yes
+XS-Autobuild: yes
+Vcs-Browser: http://svn.debian.org/wsvn/pkg-escience/torque/trunk/?rev=0&sc=0
+Vcs-Svn: svn://svn.debian.org/svn/pkg-escience/torque/trunk/
+Homepage: http://www.clusterresources.com/pages/products/torque/
+
+Package: libpbs-cache
+Section: utils
+Architecture: any
+Depends: ${misc:Depends}
+Description: PBS Cache library
+Conflicts: pbs-cache
+
+Package: pbs-cache-client
+Section: utils
+Architecture: any
+Depends: ${misc:Depends}, libpbs-cache
+Description: PBS Cache Client binaries
+Conflicts: pbs-cache
+
+Package: pbs-cache-server
+Section: utils
+Architecture: any
+Depends: ${misc:Depends}, libpbs-cache
+Description: PBS Cache Server binaries
+Conflicts: pbs-cache
+

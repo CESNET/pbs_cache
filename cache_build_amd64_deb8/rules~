@@ -1,0 +1,128 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Sample debian/rules that uses debhelper.
+# This file was originally written by Joey Hess and Craig Small.
+# As a special exception, when this file is copied by dh-make into a
+# dh-make output file, you may use that output file without restriction.
+# This special exception was added by Craig Small in version 0.37 of dh-make.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+
+# These are used for cross-compiling and for saving the configure script
+# from having to guess our platform (since we know it already)
+DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+
+
+CFLAGS = -Wall -g
+
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+	CFLAGS += -O0
+else
+	CFLAGS += -O2
+endif
+
+
+build: build-stamp
+
+build-stamp:
+	dh_testdir
+
+	# Add here commands to compile the package.
+	$(MAKE) all VMM=both STATIC=1
+
+	#docbook-to-man debian/magrathea.sgml > magrathea.1
+
+	touch $@
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp 
+
+	# Add here commands to clean up after the build process.
+	-$(MAKE) clean
+
+	dh_clean 
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k 
+	dh_installdirs
+
+	# Add here commands to install the package into debian/magrathea.
+	mkdir -p $(CURDIR)/debian/pbs-cache/usr/lib
+	mkdir -p $(CURDIR)/debian/pbs-cache/usr/bin
+	mkdir -p $(CURDIR)/debian/pbs-cache/usr/sbin
+	mkdir -p $(CURDIR)/debian/pbs-cache/usr/include
+	$(MAKE) DESTDIR=$(CURDIR)/debian/pbs-cache install
+
+	mkdir -p $(CURDIR)/debian/pbs-cache-client/usr/bin
+	mkdir -p $(CURDIR)/debian/pbs-cache-client/usr/sbin
+	mkdir -p $(CURDIR)/debian/pbs-cache-client/usr/local/sbin
+	mv $(CURDIR)/debian/pbs-cache/usr/sbin/list_cache $(CURDIR)/debian/pbs-cache-client/usr/bin/
+	mv $(CURDIR)/debian/pbs-cache/usr/sbin/update_cache $(CURDIR)/debian/pbs-cache-client/usr/bin/
+	mv $(CURDIR)/debian/pbs-cache/usr/sbin/delete_cache $(CURDIR)/debian/pbs-cache-client/usr/bin/
+	ln -s /usr/bin/list_cache $(CURDIR)/debian/pbs-cache-client/usr/sbin/list_cache
+	ln -s /usr/bin/list_cache $(CURDIR)/debian/pbs-cache-client/usr/local/sbin/list_cache
+	ln -s /usr/bin/update_cache $(CURDIR)/debian/pbs-cache-client/usr/sbin/update_cache
+	ln -s /usr/bin/update_cache $(CURDIR)/debian/pbs-cache-client/usr/local/sbin/update_cache
+	ln -s /usr/bin/delete_cache $(CURDIR)/debian/pbs-cache-client/usr/sbin/delete_cache
+	ln -s /usr/bin/delete_cache $(CURDIR)/debian/pbs-cache-client/usr/local/sbin/delete_cache
+
+	mkdir -p $(CURDIR)/debian/pbs-cache-server/usr/sbin
+	mkdir -p $(CURDIR)/debian/pbs-cache-server/usr/local/sbin
+	mkdir -p $(CURDIR)/debian/pbs-cache-server/etc/default
+	mkdir -p $(CURDIR)/debian/pbs-cache-server/etc/init.d
+	mv $(CURDIR)/debian/pbs-cache/usr/sbin/pbs_cache $(CURDIR)/debian/pbs-cache-server/usr/sbin/
+	ln -s /usr/sbin/pbs_cache $(CURDIR)/debian/pbs-cache-server/usr/local/sbin/pbs_cache
+	cp $(CURDIR)/magrathea/pbs_cache/rc $(CURDIR)/debian/pbs-cache-server/etc/init.d/pbs_cache
+	cp $(CURDIR)/magrathea/pbs_cache/rc.default $(CURDIR)/debian/pbs-cache-server/etc/default/pbs_cache
+
+	mkdir -p $(CURDIR)/debian/libpbs-cache/usr/lib
+	mkdir -p $(CURDIR)/debian/libpbs-cache/usr/include
+	mv $(CURDIR)/debian/pbs-cache/usr/lib/libpbscache* $(CURDIR)/debian/libpbs-cache/usr/lib/
+	mv $(CURDIR)/debian/pbs-cache/usr/include/pbs_cache_api.h $(CURDIR)/debian/libpbs-cache/usr/include/
+
+
+
+# Build architecture-independent files here.
+binary-indep: build install
+# We have nothing to do by default.
+
+# Build architecture-dependent files here.
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs 
+#	dh_installdocs
+	dh_installexamples
+#	dh_install
+#	dh_installmenu
+#	dh_installdebconf	
+#	dh_installlogrotate
+#	dh_installemacsen
+#	dh_installpam
+#	dh_installmime
+#	dh_python
+#	dh_installinit
+#	dh_installcron
+#	dh_installinfo
+	dh_installman
+	dh_link
+	dh_strip
+	dh_compress
+	dh_fixperms
+#	dh_perl
+	dh_makeshlibs -p pbs-cache -V
+	dh_installdeb
+	dh_shlibdeps -l$(CURDIR)/debian/pbs-cache/usr/lib -L libpbscache
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install 
